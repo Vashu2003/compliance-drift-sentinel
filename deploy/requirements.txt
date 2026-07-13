@@ -1,0 +1,7 @@
+# Slim deps for the deployed API (demo mode — no live DataHub).
+# app.main only imports datahub/mcp lazily inside the live write-back path, which is
+# disabled in the cloud (SENTINEL_LIVE_WRITEBACK=false), so these four are enough.
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.9
+httpx>=0.27

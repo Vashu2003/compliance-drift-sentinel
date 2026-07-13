@@ -1,0 +1,19 @@
+# Render blueprint for the Drift Sentinel API (demo mode, free tier).
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repo. Set GEMINI_API_KEY in the
+# service's Environment tab (it is sync:false so it is never read from the repo).
+services:
+  - type: web
+    name: drift-sentinel-api
+    runtime: python
+    plan: free
+    rootDir: .
+    buildCommand: pip install -r deploy/requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: SENTINEL_LIVE_WRITEBACK
+        value: "false"
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: GEMINI_API_KEY
+        sync: false
