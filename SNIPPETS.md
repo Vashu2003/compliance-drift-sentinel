@@ -61,6 +61,18 @@ Read-back: `graph.get_aspect(dataset_urn, EditableSchemaMetadataClass)` →
 `editableSchemaFieldInfo[].globalTags.tags` + `.description`.
 (MCP server logs at DEBUG to stderr — run scripts with `2>/dev/null` for clean output.)
 
+## Gemini narrator (Slice 4) — VERIFIED
+`gemini-2.5-flash` is DEPRECATED for new users (404). Use `gemini-flash-latest` (alias, won't
+deprecate mid-project) — set `GEMINI_MODEL` to override. REST generateContent with structured JSON:
+```
+POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key=KEY
+{ "systemInstruction": {...}, "contents":[{"parts":[{"text": FACTS}]}],
+  "generationConfig": {"responseMimeType":"application/json","responseSchema":{...},"temperature":0.2} }
+# text at candidates[0].content.parts[0].text -> json.loads
+```
+Key in `.env` (gitignored) → loaded by `engine/config._load_dotenv()`. Design: engine computes
+impact (deterministic); Gemini only narrates + drafts contract, grounded strictly in given facts.
+
 ## GMS GraphQL direct (no MCP) — VERIFIED
 ```
 curl -s http://localhost:8080/api/graphql -H 'Content-Type: application/json' \

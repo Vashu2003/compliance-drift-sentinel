@@ -24,6 +24,12 @@ provision:  ## Provision drift tags + structured property (once, before write-ba
 demo:  ## Run the impact engine over live lineage -> examples/margin_haircut_impact.md
 	$(PY) scripts/demo_impact.py
 
+narrate:  ## Run engine + Gemini narrator -> examples/margin_haircut_explanation.md (needs GEMINI_API_KEY)
+	$(PY) scripts/demo_agent.py
+
+writeback:  ## Detect drift and write findings back to DataHub
+	$(PY) scripts/demo_writeback.py
+
 test:  ## Run the test suite
 	$(PY) -m pytest -q
 
