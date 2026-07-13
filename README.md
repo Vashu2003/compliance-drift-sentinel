@@ -48,9 +48,19 @@ write the findings back to DataHub. DataHub itself: http://localhost:9002 (`data
 
 ![Drift Sentinel detecting a silent break](./assets/screenshot-detect.png)
 
+## Reusable DataHub Skill (OSS contribution)
+
+The core workflow is also packaged as a standalone **DataHub Skill** —
+[`datahub-drift-contract`](./datahub-skill/) — in the same format as the official
+[`datahub-skills`](https://github.com/datahub-project/datahub-skills) registry, so any agent
+(Claude Code, Cursor, Gemini CLI, …) can run drift-to-contract analysis. It fills a real gap: the
+official skills trace lineage and run quality checks, but none answer *"what silently breaks if I
+change this, and what contract catches it?"*
+
 ## Status
 
-Active build (hackathon). See `WORKFLOW.md` for the slice plan and `SNIPPETS.md` for verified DataHub calls.
+See `WORKFLOW.md` for the slice plan, `DECISIONS.md` for locked choices, and `SNIPPETS.md` for
+verified DataHub calls.
 
 ## License
 
