@@ -33,6 +33,21 @@ Input: `{urn, upstream:bool=true, column:str|null=null, max_hops:int=1, max_resu
 — an Airflow DATA_JOB (`dag_abc/task_123`) + a hive DATASET. Parser: `r["entity"]["urn"]`,
 `r["entity"]["type"]`, `r["degree"]`. See `engine/datahub_client.py`.
 
+## Column-level lineage read for the IMPACT ENGINE — VERIFIED (Slice 2)
+MCP `get_lineage(column=...)` aggregates to **dataset-level** — it does NOT return exact
+downstream columns. For precise column→column edges, read the fine-grained aspect via the
+DataHub graph SDK (stable, exact):
+```python
+from datahub.ingestion.graph.client import DataHubGraph, DatahubClientConfig
+from datahub.metadata.schema_classes import UpstreamLineageClass
+g = DataHubGraph(DatahubClientConfig(server="http://localhost:8080"))
+asp = g.get_aspect(entity_urn=REPORT_URN, aspect_type=UpstreamLineageClass)
+# asp.fineGrainedLineages: list; each has .upstreams (schemaField urns), .downstreams, .transformOperation
+```
+schemaField urn = `urn:li:schemaField:(<dataset_urn>,<column>)` via `make_schema_field_urn`.
+Seeded pipeline: `data/seed_margin_pipeline.py` → collateral.haircut_pct feeds 3 report cols
+(collateral_after_haircut, total_available_margin, margin_shortfall).
+
 ## GMS GraphQL direct (no MCP) — VERIFIED
 ```
 curl -s http://localhost:8080/api/graphql -H 'Content-Type: application/json' \

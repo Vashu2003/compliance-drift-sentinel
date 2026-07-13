@@ -15,6 +15,12 @@ down:  ## Stop DataHub containers
 verify:  ## Slice 0: prove the MCP server talks to DataHub
 	$(PY) scripts/verify_mcp.py
 
+seed:  ## Author the synthetic broker margin pipeline (with column lineage) into DataHub
+	$(PY) data/seed_margin_pipeline.py
+
+demo:  ## Run the impact engine over live lineage -> examples/margin_haircut_impact.md
+	$(PY) scripts/demo_impact.py
+
 test:  ## Run the test suite
 	$(PY) -m pytest -q
 
