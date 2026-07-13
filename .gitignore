@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.mypy_cache/
+
+# Env / secrets
+.env
+*.local
+
+# Logs / scratch
+quickstart.log
+*.log
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS
+.DS_Store
+
+# Devpost submission drafts (local only)
+DEVPOST_*.md
