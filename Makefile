@@ -36,5 +36,14 @@ test:  ## Run the test suite
 dev:  ## Run the FastAPI backend
 	$(PY) -m uvicorn app.main:app --reload --port 8099
 
+ui:  ## Run the React UI (proxies /api to the backend on :8099)
+	cd frontend && npm run dev
+
+ui-install:  ## Install frontend dependencies
+	cd frontend && npm install
+
+ui-build:  ## Production build of the frontend
+	cd frontend && npm run build
+
 fmt:  ## Format
 	$(PY) -m ruff format . || true

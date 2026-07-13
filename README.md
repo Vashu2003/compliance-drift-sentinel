@@ -32,13 +32,21 @@ Schema diff ──▶ FastAPI ──▶ Impact Engine (deterministic) ──▶ 
 Prereqs: Docker (Colima or Desktop), Python 3.12, `uv`.
 
 ```bash
-make up        # start local DataHub + load sample data
-make verify    # Slice 0: prove the MCP server talks to DataHub
-make test      # run the impact-engine test suite
-make dev       # run the FastAPI backend
+make up          # start local DataHub
+make seed        # author the synthetic broker margin pipeline (column-level lineage)
+make provision   # provision drift tags + structured property (for write-back)
+make test        # run the test suite
+
+# then, in two terminals:
+make dev         # FastAPI backend on :8099
+make ui          # React UI on :5173  (first time: make ui-install)
 ```
 
-DataHub UI: http://localhost:9002 (`datahub` / `datahub`). GMS API: http://localhost:8080.
+Open **http://localhost:5173** — pick an upstream change, watch the lineage graph light the
+drift path to the broken margin columns, read Gemini's explanation + drafted contract, and
+write the findings back to DataHub. DataHub itself: http://localhost:9002 (`datahub`/`datahub`).
+
+![Drift Sentinel detecting a silent break](./assets/screenshot-detect.png)
 
 ## Status
 
