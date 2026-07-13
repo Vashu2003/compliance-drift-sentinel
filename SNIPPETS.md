@@ -48,6 +48,19 @@ schemaField urn = `urn:li:schemaField:(<dataset_urn>,<column>)` via `make_schema
 Seeded pipeline: `data/seed_margin_pipeline.py` → collateral.haircut_pct feeds 3 report cols
 (collateral_after_haircut, total_available_margin, margin_shortfall).
 
+## MCP write-back (Slice 3) — VERIFIED signatures + gotchas
+Needs `TOOLS_IS_MUTATION_ENABLED=true`. Tags/properties must be PROVISIONED first
+(`data/seed_drift_vocab.py`) — add_tags fails if the tag urn doesn't exist ("Failed to validate label").
+- `add_tags`: `{tag_urns:[...], entity_urns:[dataset_urn], column_paths:[col]}`  ← column-level.
+- `update_description`: `{entity_urn:dataset_urn, column_path:col, operation:replace|append|remove, description}`.
+- `add_structured_properties`: `{property_values:{prop_urn:[vals]}, entity_urns:[schemaField_urn]}`
+  — does NOT accept `column_paths`; pass the schemaField urn as the entity. Property must be
+  defined via `StructuredPropertyDefinitionClass` (valueType `urn:li:dataType:datahub.string`,
+  entityTypes incl. `urn:li:entityType:datahub.schemaField`).
+Read-back: `graph.get_aspect(dataset_urn, EditableSchemaMetadataClass)` →
+`editableSchemaFieldInfo[].globalTags.tags` + `.description`.
+(MCP server logs at DEBUG to stderr — run scripts with `2>/dev/null` for clean output.)
+
 ## GMS GraphQL direct (no MCP) — VERIFIED
 ```
 curl -s http://localhost:8080/api/graphql -H 'Content-Type: application/json' \

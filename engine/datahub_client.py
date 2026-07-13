@@ -104,3 +104,41 @@ class DataHubClient:
 
     async def downstreams(self, urn: str, **kw) -> list[LineageNode]:
         return await self.get_lineage(urn, upstream=False, **kw)
+
+    # --- write-back (Slice 3) — require TOOLS_IS_MUTATION_ENABLED=true ------------------
+
+    def _require_mutations(self) -> None:
+        if not self.config.mutation_enabled:
+            raise RuntimeError(
+                "write-back needs mutations: set TOOLS_IS_MUTATION_ENABLED=true "
+                "(DataHubConfig.mutation_enabled) before connecting"
+            )
+
+    async def add_column_tags(self, dataset_urn: str, column: str, tag_urns: list[str]) -> dict:
+        self._require_mutations()
+        return await self._call(
+            "add_tags",
+            {"tag_urns": tag_urns, "entity_urns": [dataset_urn], "column_paths": [column]},
+        )
+
+    async def set_column_structured_property(
+        self, dataset_urn: str, column: str, property_urn: str, values: list[str]
+    ) -> dict:
+        self._require_mutations()
+        # Structured properties attach to the schemaField entity, not via column_paths.
+        from engine.lineage_graph import column_urn
+
+        return await self._call(
+            "add_structured_properties",
+            {"property_values": {property_urn: values}, "entity_urns": [column_urn(dataset_urn, column)]},
+        )
+
+    async def set_column_description(
+        self, dataset_urn: str, column: str, description: str, operation: str = "replace"
+    ) -> dict:
+        self._require_mutations()
+        return await self._call(
+            "update_description",
+            {"entity_urn": dataset_urn, "column_path": column,
+             "operation": operation, "description": description},
+        )

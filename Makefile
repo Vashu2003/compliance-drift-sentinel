@@ -18,6 +18,9 @@ verify:  ## Slice 0: prove the MCP server talks to DataHub
 seed:  ## Author the synthetic broker margin pipeline (with column lineage) into DataHub
 	$(PY) data/seed_margin_pipeline.py
 
+provision:  ## Provision drift tags + structured property (once, before write-back)
+	$(PY) data/seed_drift_vocab.py
+
 demo:  ## Run the impact engine over live lineage -> examples/margin_haircut_impact.md
 	$(PY) scripts/demo_impact.py
 
