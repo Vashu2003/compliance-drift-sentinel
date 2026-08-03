@@ -67,6 +67,24 @@ is affected, not *which columns*. For column-precise impact you must read the do
 datahub get --urn "<REPORT_URN>" --aspect upstreamLineage
 ```
 
+**Do not parse the whole of stdout as JSON.** When the CLI is newer than the server, `datahub get`
+prints the JSON and *then* appends a plain-text warning to **stdout**, not stderr:
+
+```
+}
+❗Client-Server Incompatible❗ Your client version 1.6.0.13 is newer than your server version 1.5.0.6.
+```
+
+A literal `json.loads(stdout)` then fails with `Extra data: line N column 1`. Decode only the
+**first** JSON value and ignore any trailing text:
+
+```python
+doc = json.JSONDecoder().raw_decode(stdout)[0]   # tolerant; survives the trailing warning
+```
+
+Equivalently, pin the CLI to the server version (`pip install 'acryl-datahub==<server-version>'`).
+Treat the warning as advisory — the JSON above it is complete and correct.
+
 Each `fineGrainedLineages` entry maps `upstreams` (schemaField URNs) → `downstreams` (schemaField
 URNs) with a `transformOperation`. Build a map `upstream_column → [downstream_columns]`, then:
 
@@ -153,6 +171,9 @@ See `templates/drift-report.template.md` for the full report layout.
 
 - **Trusting dataset-level lineage for column impact.** `get_lineage(column=...)` returns the
   downstream *dataset*, not the exact columns. Read `upstreamLineage.fineGrainedLineages`.
+- **Parsing all of `datahub get` stdout as JSON.** A client/server version mismatch appends a
+  plain-text warning *after* the JSON on stdout, so `json.loads` dies with `Extra data`. Use
+  `raw_decode` and keep the first value, or pin the CLI to the server version.
 - **Applying a tag that doesn't exist.** `add_tags` fails ("Failed to validate label") unless the
   tag entity was created first. Provision vocabulary before writing.
 - **Passing `column_paths` to `add_structured_properties`.** It takes the schemaField URN as the
