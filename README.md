@@ -4,6 +4,21 @@
 
 Built for **[Build with DataHub: The Agent Hackathon](https://datahub.devpost.com/)** · Track: Open / Wildcard.
 
+## Try it
+
+| | |
+|---|---|
+| **Live demo** | **https://compliance-drift-sentinel.vercel.app** |
+| API | https://compliance-drift-sentinel.onrender.com/api/health |
+
+Both run on free tiers, so the **first request after idle takes 30–60s to wake** — give it a moment.
+
+The hosted demo computes lineage and impact in-process, so it needs no DataHub: pick a scenario,
+watch the drift path light up, read the drafted contract. **Write-back runs in demo mode there**
+(it reports what it *would* write) because there is no DataHub in the cloud to write to — the
+demo video shows the real write-back landing in a live DataHub, and `make up && make dev` below
+reproduces it locally.
+
 ## The problem
 
 Data teams live in fear of the *silent break*: someone renames or retypes a column three hops upstream, and a regulatory report quietly ships wrong numbers — no error, until an auditor finds it. DataHub knows the lineage; it doesn't reason about the **blast radius of a change before it lands**.
