@@ -4,7 +4,7 @@ Pure (in-memory lineage) + one live Gemini call. Skipped if GEMINI_API_KEY is ab
 """
 import pytest
 
-from engine.agent import DriftExplanation, DriftNarrator
+from engine.agent import DriftExplanation, DriftNarrator, NarrationUnavailable
 from engine.config import GeminiConfig
 from engine.impact import analyze
 from engine.lineage_graph import ColumnLineageGraph, column_urn
@@ -36,7 +36,15 @@ def haircut_report():
 
 @pytest.mark.integration
 def test_narrator_returns_grounded_explanation(haircut_report):
-    exp = DriftNarrator().narrate(haircut_report)
+    try:
+        exp = DriftNarrator().narrate(haircut_report)
+    except NarrationUnavailable as exc:
+        if exc.status == 429:
+            # The free tier allows only 20 generateContent calls per project per DAY, so this
+            # live test is expected to be unrunnable once the day's budget is spent. Quota
+            # exhaustion is an environment condition, not a regression — skip, don't fail.
+            pytest.skip(f"Gemini quota exhausted: {exc.reason}")
+        raise
 
     assert isinstance(exp, DriftExplanation)
     assert exp.narrative and exp.contract and exp.remediation

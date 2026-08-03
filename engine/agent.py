@@ -17,6 +17,19 @@ from engine.models import ImpactReport
 
 _URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
+
+class NarrationUnavailable(RuntimeError):
+    """Gemini could not be reached or refused the request.
+
+    Carries a human-readable reason and never the request URL — httpx puts the API key in the
+    query string, so its stock error message would leak the key into logs and tracebacks.
+    """
+
+    def __init__(self, reason: str, *, status: int | None = None):
+        super().__init__(reason)
+        self.reason = reason
+        self.status = status
+
 _RESPONSE_SCHEMA = {
     "type": "OBJECT",
     "properties": {
@@ -87,12 +100,32 @@ class DriftNarrator:
                 "temperature": 0.2,
             },
         }
-        resp = httpx.post(
-            _URL.format(model=self.config.model),
-            params={"key": self.config.api_key},
-            json=payload,
-            timeout=timeout,
-        )
-        resp.raise_for_status()
-        text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-        return DriftExplanation(**json.loads(text))
+        try:
+            resp = httpx.post(
+                _URL.format(model=self.config.model),
+                params={"key": self.config.api_key},
+                json=payload,
+                timeout=timeout,
+            )
+        except httpx.RequestError as exc:
+            raise NarrationUnavailable(f"could not reach Gemini ({type(exc).__name__})") from None
+
+        if resp.status_code == 429:
+            # The free AI Studio tier rate-limits aggressively; this is the common failure.
+            raise NarrationUnavailable(
+                "Gemini rate limit reached (free tier). Try again in a moment.", status=429
+            )
+        if resp.status_code != 200:
+            # Deliberately not httpx's message: it embeds the URL, which carries ?key=<secret>.
+            raise NarrationUnavailable(
+                f"Gemini returned HTTP {resp.status_code}", status=resp.status_code
+            )
+
+        try:
+            text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+            return DriftExplanation(**json.loads(text))
+        except (KeyError, IndexError, ValueError, TypeError) as exc:
+            # e.g. a safety block or MAX_TOKENS finish returns 200 with no usable candidate.
+            raise NarrationUnavailable(
+                f"Gemini returned an unusable response ({type(exc).__name__})"
+            ) from None

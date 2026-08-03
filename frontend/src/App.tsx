@@ -114,7 +114,9 @@ export default function App() {
                   <p className="fix">{narration.remediation}</p>
                 </>
               )}
-              {narration && !narration.available && <p className="muted">Set GEMINI_API_KEY to enable narration.</p>}
+              {narration && !narration.available && (
+                <p className="muted">{narration.reason ?? "Narration unavailable."}</p>
+              )}
             </section>
           </div>
 

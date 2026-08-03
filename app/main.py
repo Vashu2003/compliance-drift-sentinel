@@ -6,13 +6,15 @@ a simulated result flagged `live: false`.
 """
 from __future__ import annotations
 
+import json
 import os
+import pathlib
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from engine.agent import DriftNarrator
+from engine.agent import DriftNarrator, NarrationUnavailable
 from engine.config import DataHubConfig, GeminiConfig
 from engine.impact import analyze
 from engine.margin_pipeline import (
@@ -31,6 +33,37 @@ app.add_middleware(
 )
 
 _GRAPH = build_column_graph()
+
+# There are only a handful of scenarios, and narration for a given change is deterministic
+# enough to reuse. Caching it keeps repeat visitors (judges clicking through the demo) from
+# spending a Gemini call every time — the free tier rate-limits after a couple of requests.
+_NARRATION_CACHE: dict[tuple[str, str, str], dict] = {}
+
+
+def _load_prebaked() -> dict[tuple[str, str, str], dict]:
+    """Narrations generated once by scripts/prebake_narrations.py.
+
+    The Gemini free tier allows 20 calls per project per DAY across all visitors, and a Render
+    free-tier cold start wipes the in-process cache — so a live-only demo can run out of
+    narration mid-judging. Serving pre-baked (still genuinely Gemini-authored) text makes the
+    deployed demo independent of that quota. Absent file → falls straight through to live.
+    """
+    path = pathlib.Path(__file__).resolve().parent.parent / "data" / "narrations.json"
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return {}
+    out = {}
+    for k, v in raw.items():
+        parts = k.split("|")
+        if len(parts) == 3:
+            out[(parts[0], parts[1], parts[2])] = v
+    return out
+
+
+_PREBAKED = _load_prebaked()
 
 
 class ChangeRequest(BaseModel):
@@ -91,9 +124,27 @@ def do_narrate(req: ChangeRequest) -> dict:
     report = _report(req)
     if not GeminiConfig().configured:
         return {"available": False, "reason": "GEMINI_API_KEY not set"}
-    exp = DriftNarrator().narrate(report)
-    return {"available": True, "narrative": exp.narrative, "business_impact": exp.business_impact,
-            "contract": exp.contract, "remediation": exp.remediation}
+
+    key = (req.dataset, req.column, req.change_type)
+    if key in _NARRATION_CACHE:
+        return _NARRATION_CACHE[key]
+    if key in _PREBAKED:
+        return _PREBAKED[key]
+
+    try:
+        exp = DriftNarrator().narrate(report)
+    except NarrationUnavailable as exc:
+        # Degrade instead of raising: an unhandled exception returns a bare 500, which
+        # Starlette's CORS middleware does not attach headers to — the browser then reports a
+        # misleading CORS error and the UI panel silently blanks. A 200 with available=false
+        # lets the client say what actually went wrong.
+        return {"available": False, "reason": exc.reason}
+
+    payload = {"available": True, "narrative": exp.narrative,
+               "business_impact": exp.business_impact, "contract": exp.contract,
+               "remediation": exp.remediation}
+    _NARRATION_CACHE[key] = payload
+    return payload
 
 
 @app.post("/api/writeback")

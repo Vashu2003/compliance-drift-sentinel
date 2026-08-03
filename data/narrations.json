@@ -1,0 +1,9 @@
+{
+  "broker.raw.ledger|currency|dropped": {
+    "available": true,
+    "narrative": "No downstream impact detected.",
+    "business_impact": "None.",
+    "contract": "",
+    "remediation": "No action needed."
+  }
+}
