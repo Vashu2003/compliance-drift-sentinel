@@ -5,5 +5,19 @@
     "business_impact": "None.",
     "contract": "",
     "remediation": "No action needed."
+  },
+  "broker.raw.collateral|haircut_pct|retyped": {
+    "available": true,
+    "narrative": "Upstream column broker.raw.collateral.haircut_pct was changed from a 0-100 percentage scale to a 0-1 fractional scale. Downstream models still divide haircut_pct by 100, causing collateral values to be severely overvalued and margin shortfalls to be incorrectly calculated. This creates a silent logic failure across all downstream margin report metrics.",
+    "business_impact": "Overvaluing collateral leads to silent under-reporting of margin shortfalls, resulting in regulatory compliance breaches and uncollateralized credit exposure for the broker.",
+    "contract": "dataset: broker.raw.collateral, column: haircut_pct, type: numeric, constraints: [not_null, min: 0.0, max: 1.0]",
+    "remediation": "Update downstream transformations in broker.marts.margin_report to remove the /100 divisor on haircut_pct and backfill the affected daily reports."
+  },
+  "broker.raw.collateral|haircut_pct|dropped": {
+    "available": true,
+    "narrative": "The upstream removal of 'broker.raw.collateral.haircut_pct' causes a hard break in downstream transformations. It directly breaks the calculation of 'collateral_after_haircut', 'total_available_margin', and 'margin_shortfall' in the 'broker.marts.margin_report' model. Consequently, the daily margin pipeline will fail to build or produce missing values for these critical fields.",
+    "business_impact": "Failing to compute collateral haircuts will cause the daily regulatory MARGIN report to silently misreport available margin and margin shortfalls. This failure leads to an immediate regulatory compliance breach, miscalculated firm exposure, and potential financial penalties.",
+    "contract": "column: broker.raw.collateral.haircut_pct, type: NUMERIC, constraints: [REQUIRED, NOT_NULL, MIN(0), MAX(100)]",
+    "remediation": "Revert the upstream column drop or restore 'broker.raw.collateral.haircut_pct' immediately to restore daily margin report execution."
   }
 }
