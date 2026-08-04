@@ -19,5 +19,19 @@
     "business_impact": "Failing to compute collateral haircuts will cause the daily regulatory MARGIN report to silently misreport available margin and margin shortfalls. This failure leads to an immediate regulatory compliance breach, miscalculated firm exposure, and potential financial penalties.",
     "contract": "column: broker.raw.collateral.haircut_pct, type: NUMERIC, constraints: [REQUIRED, NOT_NULL, MIN(0), MAX(100)]",
     "remediation": "Revert the upstream column drop or restore 'broker.raw.collateral.haircut_pct' immediately to restore daily margin report execution."
+  },
+  "broker.raw.collateral|market_value|dropped": {
+    "available": true,
+    "narrative": "The upstream column broker.raw.collateral.market_value was dropped, causing a hard break in the daily data pipeline. This directly breaks three derived metrics in broker.marts.margin_report: collateral_after_haircut, total_available_margin, and margin_shortfall.",
+    "business_impact": "Incomplete or failing calculations for the daily MARGIN report result in severe regulatory compliance breaches and financial risk from inaccurate shortfall monitoring.",
+    "contract": "dataset: broker.raw.collateral, column: market_value, type: NUMERIC, constraints: [NOT_NULL, REQUIRED_COLUMN]",
+    "remediation": "Restore the broker.raw.collateral.market_value column or update downstream derivations to use an approved alternative market value field before executing the margin report."
+  },
+  "broker.raw.ledger|cash_balance|renamed": {
+    "available": true,
+    "narrative": "Renaming broker.raw.ledger.cash_balance to cash_bal. causes a hard schema break in upstream data ingestion. This directly breaks three derived downstream columns in broker.marts.margin_report: cash_margin, total_available_margin, and margin_shortfall. Pipelines referencing the missing cash_balance column will fail during execution.",
+    "business_impact": "Inaccurate or missing data in the daily regulatory MARGIN report results in silent misreporting of margin shortfalls and available cash. This leads to an immediate regulatory compliance breach and potential financial sanctions.",
+    "contract": "dataset: broker.raw.ledger, column: cash_balance, type: NUMERIC, constraints: [NOT_NULL, PRESERVE_COLUMN_NAME]",
+    "remediation": "Update downstream transformation models in broker.marts.margin_report to select cash_bal. or create a staging alias mapping cash_bal. back to cash_balance."
   }
 }
